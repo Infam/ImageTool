@@ -18,7 +18,6 @@
 #            move image to diff folder
 #        else download?
 #
-#TODO check dupes?
 
 #Requires Python 3+, Requests, and Pillow from saucenao's example implementation
 
@@ -91,17 +90,23 @@ db_bitmask = int(index_mangadex+index_madokami+index_pawoo+index_da+index_portal
 url = 'http://saucenao.com/search.php?output_type='+output_type+'&numres='+numres+'&minsim='+minsim+'&dbmask='+str(db_bitmask)+'&api_key='+api_key
 
 def search():
+    better_img = False
     imglist = glob.glob(checkfolderpath)
+
     if len(imglist) == 0:
         print("Cannot find folder or no images present.")
         return
+
+    print("Folder Found. Beginning check...")
  
     for imgpath in imglist:
-        print("Checking "+imgpath+"...")
 
         #Image conversion and stuff
         img = Image.open(imgpath, mode='r')
-        print("Image Height x Width: ",img.height," x ",img.width)
+        print("Base Image: ")
+        print("Name: ",img.filename)
+        print("Type: ",img.format)
+        print("Height x Width: ",img.height," x ",img.width)
         imageData = io.BytesIO()
         img.save(imageData, format='PNG')
         files = {'file': ("image.png", imageData.getvalue())}
@@ -124,25 +129,54 @@ def search():
         #Check if similarity too low
         if results['results'][0]['header']['similarity'] < minsim:
             print('No high confidence results for '+imgpath+'. Going next...')
+            #TODO print best results
             continue
+        
+        #TODO For all results, get all urls and check values
+
+        #TODO print number of results > minsim
+        #TODO check multiple similarities that are better than minsim
+        #     Cross Check image quality and filetype
 
         #Get url
         postid = results['results'][0]['data']['danbooru_id']
         r = requests.get('https://danbooru.donmai.us/posts/'+str(postid)+'.json')
-        results = r.json()
-        print("Fetched Image Height x Width: ",results['image_height']," x ",results['image_width'])
+
+        results = r.json() #TODO catch errors
+
+        #TODO: Gelbooru, Pixiv, Sankaku
+
+        print("Base Image: ")
+        print("Name: ",img.filename)
+        print("Type: ",img.format)
+        print("Height x Width: ",results['image_height']," x ",results['image_width'])
+
         if img.width < results['image_width'] and img.height < results['image_height']:
             print("Better Image Size")
+            better_img = True
 
         elif results['file_url'].endswith('png') and imgpath.endswith('jpg'):
             print("Found png when original is jpg")
+            better_img = True
 
         elif results['parent_id'] is not None:
             print("Not parent image. Fetching higher url...")
+            #TODO get parent url
+            better_img = True
 
+        if better_img:
+            #TODO Download
 
+        if rename:
+            #TODO Rename. Using what? 
+
+        #TODO Move file
+    #TODO Print Stats
+    #TODO Update log file
 
 #def download():
+
+#TODO remove function calls?
 
 if __name__ == "__main__":
     search()
